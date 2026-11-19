@@ -76,7 +76,7 @@ class KreegsPanel(tk.Tk):
         # Top Banner
         header = tk.Frame(self, bg="#245EDC", padx=10, pady=8)
         header.pack(fill="x")
-        tk.Label(header, text="CLIPPING CONTROL PANEL // 24/7 PIPELINE", bg="#245EDC", fg="white",
+        tk.Label(header, text="KREEGS REPLAYS // 24/7 PIPELINE", bg="#245EDC", fg="white",
                  font=("Segoe UI", 10, "bold")).pack(side="left")
         self.state_badge = tk.Label(header, text="CHECKING...", bg="#FFFFFF", fg="#111111",
                                     font=("Consolas", 9, "bold"), padx=8, pady=2, relief="sunken", bd=1)

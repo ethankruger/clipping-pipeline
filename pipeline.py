@@ -1,3 +1,4 @@
+def _clean_utf8(s): return (s or '').encode('utf-8', 'ignore').decode('utf-8')
 import json
 import os
 import re
@@ -101,7 +102,7 @@ def _fetch_twitch_candidates(c, skip_ids):
                     'id': sid,
                     'url': 'https://clips.twitch.tv/' + sid,
                     'creator': u['login'],
-                    'title': item['title'],
+                    'title': _clean_utf8(item.get('title', '')),
                     'game_id': item.get('game_id', ''),
                     'window': w_label,
                     'views': item['view_count'],
@@ -193,7 +194,7 @@ def shortlist(c,folder):
                 sid=item['id']
                 if sid in used or sid in chan_seen or not re.fullmatch(r'[A-Za-z0-9_-]{1,180}',sid): continue
                 chan_seen.add(sid)
-                chan_rows.append({'id':sid,'url':'https://clips.twitch.tv/'+sid,'creator':u['login'],'title':item['title'],'game_id':item.get('game_id',''),'window':w_label,'views':item['view_count'],'duration':item['duration'],'vod':item.get('video_id'),'offset':item.get('vod_offset')})
+                chan_rows.append({'id':sid,'url':'https://clips.twitch.tv/'+sid,'creator':u['login'],'title':_clean_utf8(item.get('title', '')),'game_id':item.get('game_id',''),'window':w_label,'views':item['view_count'],'duration':item['duration'],'vod':item.get('video_id'),'offset':item.get('vod_offset')})
             if len(chan_rows)>=min_per_channel: break
         candidates.extend(chan_rows)
     gids=sorted({x['game_id'] for x in candidates if x.get('game_id')})
@@ -207,6 +208,9 @@ def shortlist(c,folder):
     # Merge in locally-scouted candidates from SQLite so 6h batches don't waste Gemini ranking calls
     with db() as con:
         pooled = [dict(r) for r in con.execute("select id,url,creator,title,game,window,views,duration,vod,offset,local_score from candidates where status='new' order by local_score desc, views desc limit 60")]
+    allowed_creators = {str(x).lower() for x in c.get('creators', [])}
+    if allowed_creators:
+        pooled = [x for x in pooled if str(x.get('creator', '')).lower() in allowed_creators]
     pooled = _filter_focus(c, pooled)
     if not candidates and not pooled: raise ValueError('No fresh Twitch candidates matching focus filter. Check creator logins or focus_games.')
     if pooled:

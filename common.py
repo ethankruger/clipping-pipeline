@@ -201,9 +201,9 @@ def ollama_local_json(prompt, model='qwen2.5:7b', timeout=120):
 def slots(c,day,platform,rank,now):
     if c.get('rolling_slots'):
         tz = ZoneInfo(c['timezone'])
-        plat_offset = {'instagram': 0, 'youtube': 5, 'tiktok': 10}.get(platform, 0)
+        plat_offset = 0
         spacing = int(c.get('rolling_spacing_minutes', 45))
-        return (now + timedelta(minutes=15 + rank * spacing + plat_offset)).astimezone(tz)
+        return (now + timedelta(minutes=10 + max(0, rank - 1) * spacing + plat_offset)).astimezone(tz)
     primary,alternate=c['anchors'][platform][day.weekday()]
     step=c['spacing_minutes']
     offset=((rank//2) * (1 if rank%2==0 else -1))*step

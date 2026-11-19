@@ -78,6 +78,8 @@ def tick():
                 if not p: return
                 try:
                     if p['action']=='schedule' and p['mode']=='buffer': result=buffer_send(p)
+                    elif p['action']=='submit':
+                        from browser_ops import local_submit_rewards; result=local_submit_rewards(p)
                     else: result=operate(p)
                     complete(p['key'],p['claim'],result)
                 except Exception as err:

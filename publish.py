@@ -80,11 +80,98 @@ def existing_buffer(p):
         cursor=page['pageInfo']['endCursor']
 
 
+
+def _yt_creds():
+    from common import env
+    try:
+        cid = env('YOUTUBE_CLIENT_ID')
+        csec = env('YOUTUBE_CLIENT_SECRET')
+        rtok = env('YOUTUBE_REFRESH_TOKEN')
+        if cid and csec and rtok:
+            return cid, csec, rtok
+    except Exception:
+        pass
+    return None
+
+
+def youtube_send(p):
+    import urllib.error, urllib.request
+    creds = _yt_creds()
+    if not creds:
+        return {'result': 'blocked', 'evidence': 'YouTube API credentials missing from .env'}
+    cid, csec, rtok = creds
+    video_path = Path(p['file'])
+    if not video_path.exists():
+        return {'result': 'blocked', 'evidence': f'Video file missing: {video_path}'}
+
+    try:
+        tok_body = urllib.parse.urlencode({
+            'client_id': cid,
+            'client_secret': csec,
+            'refresh_token': rtok,
+            'grant_type': 'refresh_token',
+        }).encode('utf-8')
+        tok_req = urllib.request.Request('https://oauth2.googleapis.com/token', data=tok_body, method='POST')
+        with urllib.request.urlopen(tok_req, timeout=30) as resp:
+            access_token = json.loads(resp.read().decode('utf-8'))['access_token']
+
+        video_bytes = video_path.read_bytes()
+        status_obj = {'privacyStatus': 'private', 'selfDeclaredMadeForKids': False}
+        if not p.get('paid') and p.get('due'):
+            status_obj['publishAt'] = instant(p['due']).strftime('%Y-%m-%dT%H:%M:%SZ')
+        meta = json.dumps({
+            'snippet': {
+                'title': (p.get('title') or 'Short')[:100],
+                'description': p.get('text') or '',
+                'categoryId': '24',
+            },
+            'status': status_obj,
+        }).encode('utf-8')
+
+        init_req = urllib.request.Request(
+            'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+            data=meta,
+            method='POST',
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json; charset=UTF-8',
+                'X-Upload-Content-Length': str(len(video_bytes)),
+                'X-Upload-Content-Type': 'video/mp4',
+            },
+        )
+        with urllib.request.urlopen(init_req, timeout=60) as resp:
+            upload_url = resp.headers['Location']
+
+        put_req = urllib.request.Request(
+            upload_url,
+            data=video_bytes,
+            method='PUT',
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'video/mp4',
+                'Content-Length': str(len(video_bytes)),
+            },
+        )
+        with urllib.request.urlopen(put_req, timeout=300) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        vid = data.get('id')
+        if not vid:
+            return {'result': 'blocked', 'evidence': f'YouTube API returned no video ID: {str(data)[:300]}'}
+        return {'result': 'scheduled', 'evidence': f'https://youtube.com/shorts/{vid}'}
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8', errors='replace')[:300]
+        return {'result': 'blocked', 'evidence': f'YouTube API HTTP {e.code}: {err_body}'}
+    except Exception as e:
+        return {'result': 'blocked', 'evidence': f'YouTube API error: {str(e)[:300]}'}
+
+
 def buffer_send(p):
+    if p['platform'] == 'youtube':
+        from browser_ops import youtube_studio_upload
+        return youtube_studio_upload(p)
     existing=existing_buffer(p)
     if existing: return existing
     schedule,metadata=native_settings(p['platform'],p['paid'])
-    if p['platform']=='youtube': metadata['youtube']['title']=p['title']
     obj={'channelId':p['channel_id'],'text':p['text'],'schedulingType':schedule,'mode':'customScheduled','dueAt':instant(p['due']).isoformat(),'assets':[{'video':{'url':p['media_url']}}],'saveToDraft':False,'needsApproval':False}
     if metadata: obj['metadata']=metadata
     result=gql(CREATE,{'p':obj})['createPost']
@@ -147,7 +234,7 @@ def claim(c,external=False):
         action={'ready':'schedule','scheduled':'verify','live':'submit'}[state]
         nonce=uuid.uuid4().hex
         con.execute('update posts set owner=?,state=? where k=?',(nonce,'working_'+action,key))
-        return dict(p,action=action,claim=nonce)
+        return dict(p,action=action,claim=nonce,receipt=row['receipt'])
 
 
 def complete(key,token,r):
@@ -160,7 +247,10 @@ def complete(key,token,r):
         evidence=str(r.get('evidence','')).strip()[:1200]
         if not evidence: raise ValueError('Missing observed receipt or blocker')
         if result in ('uncertain','blocked'): new=result
-        elif phase=='schedule' and result=='scheduled': new='scheduled'
+        elif phase=='schedule' and result=='scheduled':
+            new='scheduled'
+            m=re.search(r'\b([a-f0-9]{24})\b', evidence)
+            if m and p.get('platform') in ('instagram','tiktok'): p['buffer_id']=m.group(1)
         elif phase=='verify' and result=='pending':
             new='scheduled'; p['next_check']=(now+timedelta(minutes=3)).isoformat()
         elif phase=='verify' and result=='live':
@@ -168,6 +258,8 @@ def complete(key,token,r):
             if pub>now+timedelta(seconds=30) or not valid_url(r['url'],p['platform'],p['handle']): raise ValueError('Invalid public URL or publication timestamp')
             p.update(public_url=r['url'],published_at=pub.isoformat(),next_check=None)
             new='finished' if not p['campaign'] else ('expired' if now>=pub+timedelta(minutes=30) else 'live')
+        elif phase=='submit' and result=='review':
+            new='rewards_review'
         elif phase=='submit' and result in ('submitted','already_submitted','expired'):
             new=result
             if new!='expired':
