@@ -82,11 +82,21 @@ def req(url, *, data=None, headers=None, timeout=70, form=False):
         body=urllib.parse.urlencode(data).encode() if form else json.dumps(data).encode()
         hdr['Content-Type']='application/x-www-form-urlencoded' if form else 'application/json'
     request=urllib.request.Request(url,data=body,headers=hdr)
-    try:
-        with urllib.request.urlopen(request,timeout=timeout) as r: return json.load(r)
-    except urllib.error.HTTPError as e:
-        # Response bodies may echo inputs. Do not log headers, tokens or signed URLs.
-        raise RuntimeError(f'{urllib.parse.urlsplit(url).hostname}: HTTP {e.code} {e.reason}') from None
+    import time as _t
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(request,timeout=timeout) as r: return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 500, 502, 503, 504) and attempt < 4:
+                _t.sleep(3 * (2 ** attempt))
+                continue
+            # Response bodies may echo inputs. Do not log headers, tokens or signed URLs.
+            raise RuntimeError(f'{urllib.parse.urlsplit(url).hostname}: HTTP {e.code} {e.reason}') from None
+        except urllib.error.URLError as e:
+            if attempt < 4:
+                _t.sleep(3 * (2 ** attempt))
+                continue
+            raise RuntimeError(f'{urllib.parse.urlsplit(url).hostname}: {e.reason}') from None
 
 
 def twitch():
