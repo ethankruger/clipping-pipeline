@@ -20,7 +20,7 @@ def instant(value):
 
 
 def native_settings(platform,paid):
-    if platform=='tiktok': return 'notification',{}
+    if platform=='tiktok': return 'automatic',{}
     if platform=='instagram': return ('notification' if paid else 'automatic'),{'instagram':{'type':'reel','shouldShareToFeed':True}}
     return 'automatic',{'youtube':{'categoryId':'24','privacy':'private' if paid else 'public'}}
 
