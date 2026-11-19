@@ -1,0 +1,820 @@
+{
+  "name": "Clipping Pipeline ? Automated Shorts",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "966cb821-50fe-4261-b6f2-b1ed3963c4a1",
+      "name": "Test one clip \u2022 no posts",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "5e6ffe48-65e0-4fff-9de1-f6e43277797f",
+      "name": "Daily 8 AM Central",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prefix = ($('Test one clip \u2022 no posts').isExecuted || ['manual','cli'].includes($execution.mode)) ? 'test' : 'daily';\nconst stamp = $now.setZone('America/Chicago').toFormat('yyyy-MM-dd-HH');\nreturn [{json:{job: prefix + '-' + stamp}}];"
+      },
+      "id": "9817f3ba-022e-4941-ae23-e1b4083945f8",
+      "name": "Create batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8785/step",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { job: $('Create batch').first().json.job, stage: 'scout' } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "d103f356-d5a0-4379-89f5-375883f7736a",
+      "name": "Gemini \u2022 scout and watch clips",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Jlg0hGBtTVV08mZ5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.state === 'failed') throw new Error($json.error);\nreturn $input.all();"
+      },
+      "id": "43b052f9-7381-4eae-9832-25383ed7295c",
+      "name": "Check scout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "30a50a63-a2da-4659-b13d-636959982f4e",
+              "leftValue": "={{ $json.state }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "35329d20-4132-49df-8f03-c60340213704",
+      "name": "scout complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 70
+      },
+      "id": "b1689f5a-fe6d-4d5d-ac94-f5d97b339c69",
+      "name": "Wait for scout",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        304
+      ],
+      "webhookId": "9671e81c-4f0d-4e56-8d97-a22bc2d39911"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8785/step",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { job: $('Create batch').first().json.job, stage: 'brief' } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "fbb2eb88-b160-498e-9646-7142acffe33a",
+      "name": "Build the editor prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Jlg0hGBtTVV08mZ5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.state === 'failed') throw new Error($json.error);\nreturn $input.all();"
+      },
+      "id": "f70dcbc5-bed3-4f9d-9d76-0c79713a46cf",
+      "name": "Check brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0f45702a-b05b-4bec-b25a-cfa7e517a718",
+              "leftValue": "={{ $json.state }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "63a3ea27-f9de-4959-baa5-d80a2bad1b3e",
+      "name": "brief complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1408,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 70
+      },
+      "id": "9dc24292-687a-4166-8012-e4786895320c",
+      "name": "Wait for brief",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        304
+      ],
+      "webhookId": "f8d45601-9b8d-4a7b-85be-8dbaa09c9f73"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8785/step",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { job: $('Create batch').first().json.job, stage: 'edit' } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "86b12fba-9b08-4c21-9f10-9d3faf13bf3c",
+      "name": "Claude Code \u2022 edit, render and QA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1808,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Jlg0hGBtTVV08mZ5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.state === 'failed') throw new Error($json.error);\nreturn $input.all();"
+      },
+      "id": "e4d9cd05-1bd1-422d-9cab-25f3408cac9b",
+      "name": "Check edit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4b9897c3-8d32-48a0-870a-a7a92a054ddb",
+              "leftValue": "={{ $json.state }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2888d88b-5e55-4f97-bf21-0d311916e555",
+      "name": "edit complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2096,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 70
+      },
+      "id": "60d484a1-eb91-48c6-93cb-44ed63bc336a",
+      "name": "Wait for edit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2096,
+        304
+      ],
+      "webhookId": "aa09118e-83ce-4bed-9680-4eebfeba141b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8785/step",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { job: $('Create batch').first().json.job, stage: 'plan' } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "1fd92bf2-c6ee-434e-bcee-7372ba26237f",
+      "name": "Build schedule and posting ledger",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2496,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Jlg0hGBtTVV08mZ5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.state === 'failed') throw new Error($json.error);\nreturn $input.all();"
+      },
+      "id": "cd2efb02-08cf-4110-8f76-be67e615e590",
+      "name": "Check plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2656,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "70c1d392-f005-4be0-b811-1850eecc6b21",
+              "leftValue": "={{ $json.state }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6354fecd-8b3a-4a88-b1c4-6df1b0853133",
+      "name": "plan complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2800,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 70
+      },
+      "id": "9f2fe94b-1827-4f29-b74d-206d749d51b2",
+      "name": "Wait for plan",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2800,
+        304
+      ],
+      "webhookId": "12c2a8e1-5b08-4447-a8c9-6783451e8cb5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8785/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "c45ce26b-25f9-4ece-bc0d-ff780d4809d3",
+      "name": "Batch and posting status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        144
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Jlg0hGBtTVV08mZ5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "* * * * *"
+            }
+          ]
+        }
+      },
+      "id": "88a5a6b5-2624-4cef-ae44-7e1cfe6a9e34",
+      "name": "Every minute \u2022 publication and reward check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return ['manual','cli'].includes($execution.mode) ? [] : $input.all();"
+      },
+      "id": "8701027d-7f6f-40be-9a96-5e5a8ff3c824",
+      "name": "Scheduled operator only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8785/tick",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "2a618f0a-7749-4187-9ae9-5a8ee6d45fa3",
+      "name": "Process Buffer, live links and Content Rewards",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        576
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Jlg0hGBtTVV08mZ5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8785/scout-local",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        928,
+        800
+      ],
+      "id": "2bac55aa-fe3d-4a0f-83a6-06d347173a1f",
+      "name": "Local Scout (Every 2h)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Jlg0hGBtTVV08mZ5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        656,
+        800
+      ],
+      "id": "d64247f2-e8d3-4e62-84bb-bfed6d318de6",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Test one clip \u2022 no posts": {
+      "main": [
+        [
+          {
+            "node": "Create batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 8 AM Central": {
+      "main": [
+        [
+          {
+            "node": "Create batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create batch": {
+      "main": [
+        [
+          {
+            "node": "Gemini \u2022 scout and watch clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini \u2022 scout and watch clips": {
+      "main": [
+        [
+          {
+            "node": "Check scout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check scout": {
+      "main": [
+        [
+          {
+            "node": "scout complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scout complete?": {
+      "main": [
+        [
+          {
+            "node": "Build the editor prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for scout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for scout": {
+      "main": [
+        [
+          {
+            "node": "Gemini \u2022 scout and watch clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the editor prompt": {
+      "main": [
+        [
+          {
+            "node": "Check brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check brief": {
+      "main": [
+        [
+          {
+            "node": "brief complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "brief complete?": {
+      "main": [
+        [
+          {
+            "node": "Claude Code \u2022 edit, render and QA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for brief": {
+      "main": [
+        [
+          {
+            "node": "Build the editor prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Code \u2022 edit, render and QA": {
+      "main": [
+        [
+          {
+            "node": "Check edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check edit": {
+      "main": [
+        [
+          {
+            "node": "edit complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "edit complete?": {
+      "main": [
+        [
+          {
+            "node": "Build schedule and posting ledger",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for edit": {
+      "main": [
+        [
+          {
+            "node": "Claude Code \u2022 edit, render and QA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build schedule and posting ledger": {
+      "main": [
+        [
+          {
+            "node": "Check plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check plan": {
+      "main": [
+        [
+          {
+            "node": "plan complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "plan complete?": {
+      "main": [
+        [
+          {
+            "node": "Batch and posting status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for plan": {
+      "main": [
+        [
+          {
+            "node": "Build schedule and posting ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every minute \u2022 publication and reward check": {
+      "main": [
+        [
+          {
+            "node": "Scheduled operator only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scheduled operator only": {
+      "main": [
+        [
+          {
+            "node": "Process Buffer, live links and Content Rewards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {},
+  "nodeGroups": [],
+  "tags": []
+}

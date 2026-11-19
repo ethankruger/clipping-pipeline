@@ -1,0 +1,171 @@
+{
+  "editor": "codex",
+  "publish_mode": "buffer",
+  "timezone": "America/Chicago",
+  "target": 4,
+  "review_budget": 8,
+  "top_per_channel": 6,
+  "spacing_minutes": 10,
+  "gemini_model": "gemini-3.5-flash-lite",
+  "font": "Arial",
+  "creators": [
+    "lacy",
+    "clix",
+    "jasontheween",
+    "yusuf7n",
+    "jshock9nine",
+    "stableronaldo",
+    "marlon",
+    "silky"
+  ],
+  "channels": {
+    "instagram": {
+      "id": "YOUR_ID",
+      "handle": "kreegsreplays"
+    },
+    "tiktok": {
+      "id": "YOUR_ID",
+      "handle": "kreegs.replays"
+    },
+    "youtube": {
+      "id": "YOUR_ID",
+      "handle": "Kreegs Replay",
+      "service_id": "YOUR_SERVICE_ID"
+    }
+  },
+  "anchors": {
+    "instagram": [
+      [
+        19,
+        18
+      ],
+      [
+        19,
+        17
+      ],
+      [
+        12,
+        18
+      ],
+      [
+        9,
+        19
+      ],
+      [
+        22,
+        21
+      ],
+      [
+        21,
+        20
+      ],
+      [
+        21,
+        20
+      ]
+    ],
+    "tiktok": [
+      [
+        13,
+        11
+      ],
+      [
+        6,
+        22
+      ],
+      [
+        22,
+        21
+      ],
+      [
+        13,
+        22
+      ],
+      [
+        18,
+        20
+      ],
+      [
+        17,
+        16
+      ],
+      [
+        9,
+        13
+      ]
+    ],
+    "youtube": [
+      [
+        20,
+        18
+      ],
+      [
+        20,
+        21
+      ],
+      [
+        19,
+        20
+      ],
+      [
+        19,
+        20
+      ],
+      [
+        16,
+        18
+      ],
+      [
+        19,
+        11
+      ],
+      [
+        19,
+        20
+      ]
+    ]
+  },
+  "rules": {
+    "lacy": {
+      "approved": true,
+      "joined": false,
+      "paid": false,
+      "campaign": "https://example.com/your-campaign-or-url",
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "youtube"
+      ],
+      "valid_through": "YOUR_VALID_THROUGH",
+      "overlay": "",
+      "instructions": "Use #Lacy. Verify eligible source footage and fill in the current joined SOCIAL-VIDEO brief, exact embedded and native disclosure, watermark and mentions before enabling."
+    }
+  },
+  "text_provider": "ollama",
+  "ollama_model": "qwen2.5:3b",
+  "ollama_url": "http://127.0.0.1:11434",
+  "stream_window_hours": 6,
+  "window_fallback_hours": [
+    12,
+    24,
+    48
+  ],
+  "min_clips_per_channel": 3,
+  "max_per_creator": 2,
+  "slots": [
+    "15:21"
+  ],
+  "rolling_slots": true,
+  "rolling_spacing_minutes": 75,
+  "local_model": "qwen2.5:7b",
+  "focus_games": [
+    "Grand Theft Auto VI"
+  ],
+  "focus_keywords": [
+    "gta 6",
+    "gta6",
+    "gta vi",
+    "grand theft auto 6",
+    "grand theft auto vi"
+  ]
+}

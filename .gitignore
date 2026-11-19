@@ -1,0 +1,12 @@
+﻿.env
+.env.*
+!.env.example
+config.json
+config.json.*
+.venv/
+state/
+__pycache__/
+*.pyc
+*.bak
+*.before-*
+*.log
