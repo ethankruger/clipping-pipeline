@@ -25,6 +25,13 @@ def native_settings(platform,paid):
     return 'automatic',{'youtube':{'categoryId':'24','privacy':'private' if paid else 'public'}}
 
 
+def _disclose(text,rule):
+    """Content Rewards clips must carry the paid-promo disclosure (default #ad)."""
+    tag=str(rule.get('disclosure','#ad')).strip()
+    if not rule.get('campaign') or not tag: return text
+    return text if tag.lower() in text.lower() else text.rstrip()+'\n\n'+tag
+
+
 def enqueue(c,folder,day,dry):
     rows=read(folder/'manifest.json'); report=[]
     live=not dry and c['publish_mode']!='preview'
@@ -43,7 +50,7 @@ def enqueue(c,folder,day,dry):
             elif not isinstance(rule.get('paid'),bool): reason='commercial status unspecified'
             elif rule['paid'] and not (rule.get('joined') and rule.get('campaign','').startswith('https://contentrewards.com/c/campaigns/')): reason='joined campaign missing'
             p={'key':key,'platform':plat,'handle':c['channels'][plat]['handle'],'channel_id':c['channels'][plat]['id'],
-               'creator':row['creator'],'title':ed['title'],'text':ed['description'] if plat=='youtube' else ed[plat],
+               'creator':row['creator'],'title':ed['title'],'text':_disclose(ed['description'] if plat=='youtube' else ed[plat],rule),
                'due':due.isoformat() if due else None,'file':row['file'],'source':row['url'],'event':row['event'],
                'campaign':rule.get('campaign',''),'paid':rule.get('paid'),'requirements':rule.get('instructions',''),
                'rewards_account':'kreegsreplay','mode':c['publish_mode']}
